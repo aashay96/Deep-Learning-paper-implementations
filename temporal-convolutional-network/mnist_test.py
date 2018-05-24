@@ -73,7 +73,7 @@ def train(ep):
     model.train()
 
     for batch_idx,(data,target) in enumerate(train_loader):
-        if args.cuda():
+        if args.cuda:
             data,target = data.cuda(),target.cuda()
         if args.permute:
             data = data[:,:,permute]
@@ -104,7 +104,7 @@ def test():
     correct = 0
 
     for data,target in test_loader:
-        if args.cuda():
+        if args.cuda:
             data,target = data.cuda(),target.cuda()
         if args.permute:
             data = data[:,:,permute]
