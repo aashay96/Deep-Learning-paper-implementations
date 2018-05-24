@@ -39,8 +39,8 @@ args = parser.parse_args()
 
 torch.manual_seed(args.seed)
 if torch.cuda.is_available():
-	if not args.cuda:
-		print("WARNING: You have a CUDA device, so you should probably run with --cuda")
+    if not args.cuda:
+        print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
 root = './data/mnist'
 
@@ -53,8 +53,8 @@ steps = 0
 
 print(args)
 
-train_loader,test_loader = data_generator(root_batch_size)
-permute = torch.Tensor(np.random.permutaion(784).astype(np.float64)).long()
+train_loader,test_loader = data_generator(root,batch_size)
+permute = torch.Tensor(np.random.permutation(784).astype(np.float64)).long()
 channel_sizes = [args.nhid]*args.levels
 kernel_size = args.ksize
 
@@ -68,54 +68,54 @@ lr = args.lr
 optimizer = getattr(optim,args.optim)(model.parameters(),lr = lr)
 
 def train(ep):
-	global steps
-	train_loss = 0
-	model.train()
+    global steps
+    train_loss = 0
+    model.train()
 
-	for batch_idx,(data,target) in enumerate(train_loader):
-		if args.cuda():
-			data,target = data.cuda(),target.cuda()
-		if args.permute:
-			data = data[:,:,permute]
+    for batch_idx,(data,target) in enumerate(train_loader):
+        if args.cuda():
+            data,target = data.cuda(),target.cuda()
+        if args.permute:
+            data = data[:,:,permute]
 
-		data,target = Variable(data),Variable(target)
-		optimizer.zero_grad()
-		output = model(data)
-		loss = F.nll_loss(output,target)
-		loss.backward()
+        data,target = Variable(data),Variable(target)
+        optimizer.zero_grad()
+        output = model(data)
+        loss = F.nll_loss(output,target)
+        loss.backward()
 
-		if args.clip>0:
-			torch.nn.utils.clip_grad_norm(model.parameters(),args.clip)
+        if args.clip>0:
+            torch.nn.utils.clip_grad_norm(model.parameters(),args.clip)
 
-		optimizer.step()
-		train_loss += loss
-		steps += seq_length
+        optimizer.step()
+        train_loss += loss
+        steps += seq_length
 
-		if batch_idx > 0 and batch_idx%args.log_interval == 0:
-			print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tSteps: {}'.format(
+        if batch_idx > 0 and batch_idx%args.log_interval == 0:
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tSteps: {}'.format(
                 ep, batch_idx * batch_size, len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), train_loss.data[0]/args.log_interval, steps))
             train_loss = 0
 
 def test():
 
-	model.eval()
-	test_loss = 0
-	correct = 0
+    model.eval()
+    test_loss = 0
+    correct = 0
 
-	for data,target in test_loader:
-		if args.cuda():
-			data,target = data.cuda(),target.cuda()
-		if args.permute:
-			data = data[:,:,permute]
+    for data,target in test_loader:
+        if args.cuda():
+            data,target = data.cuda(),target.cuda()
+        if args.permute:
+            data = data[:,:,permute]
 
-		data,target = Variable(data,volatile=True),Variable(target)
-		output = model(data)
-		test_loss += F.nll_loss(output,target,size_average=False).data[0]
-		pred = output.data.max(1,keepdim=True)[1]
-		correct += pred.eq(target.data.view_as(pred)).cpu().sum()
-		test_loss /= len(test_loader.dataset)
-		print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+        data,target = Variable(data,volatile=True),Variable(target)
+        output = model(data)
+        test_loss += F.nll_loss(output,target,size_average=False).data[0]
+        pred = output.data.max(1,keepdim=True)[1]
+        correct += pred.eq(target.data.view_as(pred)).cpu().sum()
+        test_loss /= len(test_loader.dataset)
+        print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
     return test_loss
